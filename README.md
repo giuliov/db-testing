@@ -51,11 +51,9 @@ Create a volume, mount and create the database on the volume.
 
 ```bash
 docker volume create sqldata
-docker run -v sqldata:/sqldata --name sql1 -d --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2019-GA-ubuntu-16.04
-docker exec -it sql1 /bin/bash -c "ls -l /"
-# mssql is the Linux user running the SQL Server process
-docker exec -u 0 -it sql1 /bin/bash -c "chown mssql /sqldata"
-docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "CREATE DATABASE test ON (NAME=test_data,FILENAME='/sqldata/test_data.mdf') LOG ON (NAME=test_log,FILENAME='/sqldata/test_log.ldf');"
+docker run -v sqldata:/var/opt/mssql --name sql1 -d --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2019-GA-ubuntu-16.04
+docker exec -it sql1 /bin/bash -c "ls -l /var/opt/mssql/data"
+docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "CREATE DATABASE test;"
 ```
 
 Now, stop the container and show that the database survived.
@@ -64,18 +62,9 @@ Now, stop the container and show that the database survived.
 docker stop sql1
 docker ps
 # now we see if the database survived
-docker run -v sqldata:/sqldata --name sql1 -d --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2019-GA-ubuntu-16.04
+docker run -v sqldata:/var/opt/mssql --name sql1 -d --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2019-GA-ubuntu-16.04
 docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "SELECT name FROM sys.databases;"
-docker exec -u 0 -it sql1 /bin/bash -c "ls -l /sqldata"
-```
-
-Looks like the DB files are there, but SQL hasn't take notice.
-The problem is that the **master** database hasn't survived, so we must explicitly attach the DB.
-
-```bash
-docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "CREATE DATABASE test ON (NAME=test_data,FILENAME='/sqldata/test_data.mdf') LOG ON (NAME=test_log,FILENAME='/sqldata/test_log.ldf') FOR ATTACH;"
-# now is good
-docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "SELECT name FROM sys.databases;"
+docker exec -u 0 -it sql1 /bin/bash -c "ls -l /var/opt/mssql/data"
 ```
 
 Clean up
@@ -83,6 +72,8 @@ Clean up
 ```bash
 docker stop sql1
 docker ps
+docker volume rm sqldata
+docker volume list
 ```
 
 
@@ -147,10 +138,10 @@ We continue from the previous step, deploying the image in Azure.
 This demo requires a few Azure resources and environment variables.
 
 ```bash
-cd azure-resources
 # replace with a value that suits you
 RESOURCE_GROUP=dbtesting
 RESOURCE_LOCATION=westeurope
+cd azure-resources
 az group create --name $RESOURCE_GROUP --location $RESOURCE_LOCATION
 az group deployment create --resource-group $RESOURCE_GROUP --template-file template.json -o json --query "properties.outputs"
 ```
@@ -176,14 +167,14 @@ az account set --subscription ********
 # this retrieves a token for docker
 az acr login --name $ACR_USER
 # finally
-docker push ACR_SERVER/sql-demo/linux/mssql-pubs:v1
+docker push $ACR_SERVER/sql-demo/linux/mssql-pubs:v1
 ```
 
 Finally create the ACI and run it.
 > NOTE we use the admin account
 
 ```bash
-az container create --resource-group $RESOURCE_GROUP --name $RESOURCE_GROUP-pubs --location $RESOURCE_LOCATION --cpu 2 --memory 2 --image $ACR_SERVER/sql-demo/linux/mssql-pubs:v1 --registry-login-server $ACR_SERVER --registry-username $ACR_USER --registry-password $ACR_PASSWD --dns-name-label $RESOURCE_GROUP-pubs --ports 1433 --protocol TCP --environment-variables ACCEPT_EULA=Y SA_PASSWORD=$SA_PASSWORD
+az container create --resource-group $RESOURCE_GROUP --name $RESOURCE_GROUP-pubs --location $RESOURCE_LOCATION --cpu 2 --memory 2 --image $ACR_SERVER/sql-demo/linux/mssql-pubs:v1 --registry-login-server $ACR_SERVER --registry-username $ACR_USER --registry-password $ACR_PASSWD --dns-name-label $RESOURCE_GROUP-pubs --ports 1433 --protocol TCP --environment-variables ACCEPT_EULA=Y SA_PASSWORD=$SA_PASSWORD ATTACH_WAIT=30s
 ```
 
 The command will take a couple of minutes to create the VM and pull the image from the registry.

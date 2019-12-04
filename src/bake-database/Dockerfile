@@ -28,7 +28,7 @@ WORKDIR /sqlcode
 # this works only for Linux containers
 COPY --chown=mssql:root . /sqlcode/
 RUN chmod +x /sqlcode/*.sh
-COPY --chown=mssql:root --from=build /var/opt/mssql/data/pubs.mdf /sqldata/
-COPY --chown=mssql:root --from=build /var/opt/mssql/data/pubs_log.ldf /sqldata/
+COPY --chown=mssql:root --from=build /var/opt/mssql/data/pubs.mdf /var/opt/mssql/data/
+COPY --chown=mssql:root --from=build /var/opt/mssql/data/pubs_log.ldf /var/opt/mssql/data/
 
 CMD /bin/bash ./entrypoint.sh
