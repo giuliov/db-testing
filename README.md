@@ -106,5 +106,36 @@ Clean up
 ```bash
 docker stop sql2
 docker ps
+cd ..
 ```
+
+
+
+## Restore backup and mask data
+
+This time we restore the famous **pubs** database from a backup, using multi-pass Dockerfile.
+In the first pass, we inject the `.bak` file and restore it.
+In the second pass we pick the restored `.mdf` and `.ldf` files.
+
+```bash
+cd bake-database
+docker build . -t mssql-pubs:v1
+```
+
+```bash
+docker run --name sql3 --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mssql-pubs:v1
+docker exec -it sql3 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "SELECT name FROM sys.databases;"
+docker exec -it sql3 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -d pubs -Q "SELECT * FROM employee;"
+```
+
+As you see the launch script executes the `bake-database/clean-data.sql` script. It trivially replaces employee surnames with asterisks (`*`).
+
+Clean up
+
+```bash
+docker stop sql3
+docker ps
+cd ..
+```
+
 
