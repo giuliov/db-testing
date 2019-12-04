@@ -1,0 +1,4 @@
+SELECT @@VERSION, @@SERVERNAME,
+    SERVERPROPERTY('ComputerNamePhysicalNetBIOS'),
+    SERVERPROPERTY('MachineName'),
+    SERVERPROPERTY('ServerName')
