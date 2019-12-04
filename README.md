@@ -48,6 +48,7 @@ docker ps
 To persist the database we must use a volume.
 
 Create a volume, mount and create the database on the volume.
+
 ```bash
 docker volume create sqldata
 docker run -v sqldata:/sqldata --name sql1 -d --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2019-GA-ubuntu-16.04
@@ -138,4 +139,62 @@ docker ps
 cd ..
 ```
 
+
+
+## In the cloud
+
+We continue from the previous step, deploying the image in Azure.
+This demo requires a few Azure resources and environment variables.
+
+```bash
+cd azure-resources
+# replace with a value that suits you
+RESOURCE_GROUP=dbtesting
+RESOURCE_LOCATION=westeurope
+az group create --name $RESOURCE_GROUP --location $RESOURCE_LOCATION
+az group deployment create --resource-group $RESOURCE_GROUP --template-file template.json -o json --query "properties.outputs"
+```
+
+The template creates the Container Registry and the Azure File shares required later.
+Set the environment variables grabbing values from the output.
+
+```bash
+ACR_SERVER=******.azurecr.io
+ACR_USER=******
+ACR_PASSWD=********
+STORAGEACCOUNT_KEY=******
+```
+
+Add a verbose tag to the image and push it to the registry.
+
+```bash
+# add tag to match future registry location
+docker tag mssql-pubs:v1 $ACR_SERVER/sql-demo/linux/mssql-pubs:v1
+# check we are using the right subscription
+az account list -o table
+az account set --subscription ********
+# this retrieves a token for docker
+az acr login --name $ACR_USER
+# finally
+docker push ACR_SERVER/sql-demo/linux/mssql-pubs:v1
+```
+
+Finally create the ACI and run it.
+> NOTE we use the admin account
+
+```bash
+az container create --resource-group $RESOURCE_GROUP --name $RESOURCE_GROUP-pubs --location $RESOURCE_LOCATION --cpu 2 --memory 2 --image $ACR_SERVER/sql-demo/linux/mssql-pubs:v1 --registry-login-server $ACR_SERVER --registry-username $ACR_USER --registry-password $ACR_PASSWD --dns-name-label $RESOURCE_GROUP-pubs --ports 1433 --protocol TCP --environment-variables ACCEPT_EULA=Y SA_PASSWORD=$SA_PASSWORD
+```
+
+The command will take a couple of minutes to create the VM and pull the image from the registry.
+
+Look in the Portal the actions then the logs.
+
+Now connect using Azure Data Studio or similar.
+
+Clean up
+
+```bash
+cd ..
+```
 
