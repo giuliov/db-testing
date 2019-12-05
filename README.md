@@ -206,10 +206,11 @@ az storage file upload-batch --account-name $STORAGEACCOUNT_NAME --account-key $
 Then we create the image, upload to Registry and start it.
 
 ```bash
-cd aci+af
+cd aci+af/Sql
 docker build . -t $ACR_SERVER/sql-demo/linux/mssql-attach-pubs:v1
 az acr login --name $ACR_USER
 docker push $ACR_SERVER/sql-demo/linux/mssql-attach-pubs:v1
+cd ..
 eval "echo \"$(cat deploy.yaml)\"" > _temp.yaml
 az container create --resource-group $RESOURCE_GROUP --file _temp.yaml -o tsv
 ```
@@ -219,11 +220,30 @@ The command will take a couple of minutes to create the VM and pull the image fr
 Look in the Portal the actions then the logs.
 
 Now connect using Azure Data Studio or similar.
+Works? Good.
+
+Next demo is adding a trivial sidecar running some simple query.
+
+```bash
+cd aci+af/Sidecar
+docker build . -t $ACR_SERVER/sql-demo/linux/mssql-tests:v1
+az acr login --name $ACR_USER
+docker push $ACR_SERVER/sql-demo/linux/mssql-tests:v1
+cd ..
+eval "echo \"$(cat deploy-2.yaml)\"" > _temp-2.yaml
+az container create --resource-group $RESOURCE_GROUP --file _temp-2.yaml -o tsv
+```
+
+You see the query in the logs?
+```bash
+az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-tests --container-name mssql-tests
+```
 
 Clean up
 
 ```bash
 rm _temp.yaml
 az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-attach-pubs --yes
+az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-tests --yes
 cd ..
 ```
