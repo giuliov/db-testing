@@ -5,3 +5,4 @@ https _cdn.evbuc.com_images_81176271_197376096476_1_original.20191114-210622.png
 *.code-workspace
 src/aci+af/_temp.yaml
 src/aci+af/_temp-2.yaml
+obj/

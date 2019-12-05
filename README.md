@@ -244,6 +244,7 @@ Clean up
 ```bash
 rm _temp.yaml
 az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-attach-pubs --yes
+rm _temp-2.yaml
 az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-tests --yes
 cd ..
 ```
