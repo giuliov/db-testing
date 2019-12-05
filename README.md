@@ -153,6 +153,7 @@ Set the environment variables grabbing values from the output.
 ACR_SERVER=******.azurecr.io
 ACR_USER=******
 ACR_PASSWD=********
+STORAGEACCOUNT_NAME=******
 STORAGEACCOUNT_KEY=******
 ```
 
@@ -174,7 +175,7 @@ Finally create the ACI and run it.
 > NOTE we use the admin account
 
 ```bash
-az container create --resource-group $RESOURCE_GROUP --name $RESOURCE_GROUP-pubs --location $RESOURCE_LOCATION --cpu 2 --memory 2 --image $ACR_SERVER/sql-demo/linux/mssql-pubs:v1 --registry-login-server $ACR_SERVER --registry-username $ACR_USER --registry-password $ACR_PASSWD --dns-name-label $RESOURCE_GROUP-pubs --ports 1433 --protocol TCP --environment-variables ACCEPT_EULA=Y SA_PASSWORD=$SA_PASSWORD ATTACH_WAIT=30s
+az container create --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-pubs --location $RESOURCE_LOCATION --cpu 2 --memory 2 --image $ACR_SERVER/sql-demo/linux/mssql-pubs:v1 --registry-login-server $ACR_SERVER --registry-username $ACR_USER --registry-password $ACR_PASSWD --dns-name-label ${RESOURCE_GROUP}-pubs --ports 1433 --protocol TCP --environment-variables ACCEPT_EULA=Y SA_PASSWORD=$SA_PASSWORD ATTACH_WAIT=30s
 ```
 
 The command will take a couple of minutes to create the VM and pull the image from the registry.
@@ -186,6 +187,43 @@ Now connect using Azure Data Studio or similar.
 Clean up
 
 ```bash
+az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-pubs --yes
 cd ..
 ```
 
+
+
+## Container Instance + File share
+
+Now, we will mount an existing database, could be TB-sized, from a share.
+
+First step, we upload the **pubs** database files (`.mdf` and `.ldf`) to an Azure File share.
+
+```bash
+az storage file upload-batch --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination database --source azure-resources/data/
+```
+
+Then we create the image, upload to Registry and start it.
+
+```bash
+cd aci+af
+docker build . -t $ACR_SERVER/sql-demo/linux/mssql-attach-pubs:v1
+az acr login --name $ACR_USER
+docker push $ACR_SERVER/sql-demo/linux/mssql-attach-pubs:v1
+eval "echo \"$(cat deploy.yaml)\"" > _temp.yaml
+az container create --resource-group $RESOURCE_GROUP --file _temp.yaml -o tsv
+```
+
+The command will take a couple of minutes to create the VM and pull the image from the registry.
+
+Look in the Portal the actions then the logs.
+
+Now connect using Azure Data Studio or similar.
+
+Clean up
+
+```bash
+rm _temp.yaml
+az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-attach-pubs --yes
+cd ..
+```
