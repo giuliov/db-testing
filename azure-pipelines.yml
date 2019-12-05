@@ -16,3 +16,8 @@ steps:
   inputs:
     command: 'build'
     projects: 'src/pipeline/hello-world/hello-world.csproj'
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'test'
+    projects: 'src/pipeline/db-tests/db-tests.csproj'
+    testRunTitle: 'Database tests'
