@@ -253,6 +253,11 @@ cd ..
 
 ## Pipeline
 
+This last demo is more interesting and realistic.
+We have the now usual SQL instance running in Azure, mounting a database from Azure Files; this time the sidecar container is an Azure Pipelines agent running tests.
+
+Build the agent image and push it to the Registry.
+
 ```
 cd pipeline/agent
 docker build . -t $ACR_SERVER/sql-demo/linux/azp-agent:v1
@@ -260,10 +265,20 @@ az acr login --name $ACR_USER
 docker push $ACR_SERVER/sql-demo/linux/azp-agent:v1
 ```
 
+Deploy the containers couple.
+
 ```
 cd ..
 eval "echo \"$(cat deploy-agent.yaml)\"" > _temp-agent.yaml
 az container create --resource-group $RESOURCE_GROUP --file _temp-agent.yaml -o tsv
 ```
 
-Kick-off the pipeline.
+Now kick-off the pipeline in Azure Pipelines and look at the _Tests_ tab.
+
+Clean up
+
+```bash
+rm _temp-agent.yaml
+az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-agent --yes
+cd ..
+```
