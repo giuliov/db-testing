@@ -1,6 +1,37 @@
 Demo code of _Use SQL Server for Linux and Docker to streamline your test and schema migration process_ session.
 
 
+## Demos
+
+[Volatile volume](#volatile-volume)  
+[Permanent volume](#permanent-volume)  
+[SQL Create script](#sql-create-script)  
+[Restore backup and mask data](#restore-backup-and-mask-data)  
+[In the cloud](#in-the-cloud)  
+[Container Instance + File share](#container-instance--file-share)  
+[Pipeline](#pipeline)  
+
+
+
+## Prerequisites
+
+The demos require an Azure subscription and an Azure DevOps organisation.
+You need to have correct values for the following environment variables.
+
+```bash
+# replace with a value that suits you
+RESOURCE_GROUP=dbtesting
+RESOURCE_LOCATION=westeurope
+SA_PASSWORD=******
+ATTACH_WAIT=10s
+ACR_SERVER=******.azurecr.io
+ACR_USER=******
+ACR_PASSWD=********
+STORAGEACCOUNT_NAME=******
+STORAGEACCOUNT_KEY=******
+AZP_URL=https://dev.azure.com/******
+AZP_TOKEN=******
+```
 
 ## Volatile volume
 
@@ -196,6 +227,7 @@ cd ..
 ## Container Instance + File share
 
 Now, we will mount an existing database, could be TB-sized, from a share.
+Looks like mounting the share on `/var/opt/mssql` crashes SQL, so we will use a different directory i.e. `/sqldata`.
 
 First step, we upload the **pubs** database files (`.mdf` and `.ldf`) to an Azure File share.
 
@@ -215,6 +247,7 @@ eval "echo \"$(cat deploy.yaml)\"" > _temp.yaml
 az container create --resource-group $RESOURCE_GROUP --file _temp.yaml -o tsv
 ```
 
+Note the trick to replace environment variable values in the YAML file.
 The command will take a couple of minutes to create the VM and pull the image from the registry.
 
 Look in the Portal the actions then the logs.
