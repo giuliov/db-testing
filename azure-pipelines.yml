@@ -8,8 +8,6 @@ trigger:
 
 pool:
   name: Demos
-  demands:
-    - agent.name -equals mydockeragent
 
 steps:
 - task: DotNetCoreCLI@2

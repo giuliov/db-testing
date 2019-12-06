@@ -248,3 +248,22 @@ rm _temp-2.yaml
 az container delete --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-tests --yes
 cd ..
 ```
+
+
+
+## Pipeline
+
+```
+cd pipeline/agent
+docker build . -t $ACR_SERVER/sql-demo/linux/azp-agent:v1
+az acr login --name $ACR_USER
+docker push $ACR_SERVER/sql-demo/linux/azp-agent:v1
+```
+
+```
+cd ..
+eval "echo \"$(cat deploy-agent.yaml)\"" > _temp-agent.yaml
+az container create --resource-group $RESOURCE_GROUP --file _temp-agent.yaml -o tsv
+```
+
+Kick-off the pipeline.
