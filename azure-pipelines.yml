@@ -10,6 +10,14 @@ pool:
   name: Demos
 
 steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Microsoft Azure Sponsorship'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      $SNAPSHOT_TIMESTAMP=$(az storage share snapshot --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --name database -o json --query "snapshot")
+      echo "##vso[task.setvariable variable=SNAPSHOT_TIMESTAMP]${SNAPSHOT_TIMESTAMP}"
 - task: DotNetCoreCLI@2
   inputs:
     command: 'test'
@@ -17,3 +25,11 @@ steps:
     testRunTitle: 'Database tests'
   env:
     SA_PASSWORD: $(SA_PASSWORD)
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Microsoft Azure Sponsorship'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage file copy start --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination-share database --destination-path pubs.mdf --source-share database --source-path pubs.mdf --file-snapshot $SNAPSHOT_TIMESTAMP -o json
+      az storage file copy start --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination-share database --destination-path pubs_log.ldf --source-share database --source-path pubs_log.ldf --file-snapshot $SNAPSHOT_TIMESTAMP -o json
