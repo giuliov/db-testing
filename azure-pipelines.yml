@@ -18,6 +18,9 @@ steps:
     inlineScript: |
       $SNAPSHOT_TIMESTAMP=$(az storage share snapshot --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --name database -o json --query "snapshot")
       echo "##vso[task.setvariable variable=SNAPSHOT_TIMESTAMP]${SNAPSHOT_TIMESTAMP}"
+  env:
+    STORAGEACCOUNT_NAME: $(STORAGEACCOUNT_NAME)
+    STORAGEACCOUNT_KEY: $(STORAGEACCOUNT_KEY)
 - task: DotNetCoreCLI@2
   inputs:
     command: 'test'
@@ -33,3 +36,7 @@ steps:
     inlineScript: |
       az storage file copy start --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination-share database --destination-path pubs.mdf --source-share database --source-path pubs.mdf --file-snapshot $SNAPSHOT_TIMESTAMP -o json
       az storage file copy start --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination-share database --destination-path pubs_log.ldf --source-share database --source-path pubs_log.ldf --file-snapshot $SNAPSHOT_TIMESTAMP -o json
+  env:
+    STORAGEACCOUNT_NAME: $(STORAGEACCOUNT_NAME)
+    STORAGEACCOUNT_KEY: $(STORAGEACCOUNT_KEY)
+    SNAPSHOT_TIMESTAMP: $(SNAPSHOT_TIMESTAMP)
