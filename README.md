@@ -304,6 +304,9 @@ Deploy the containers couple.
 cd ..
 eval "echo \"$(cat deploy-agent.yaml)\"" > _temp-agent.yaml
 az container create --resource-group $RESOURCE_GROUP --file _temp-agent.yaml -o tsv
+
+az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-agent --container-name mssql-attach-pubs
+az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-agent --container-name azp-agent
 ```
 
 Now kick-off the pipeline in Azure Pipelines and look at the _Tests_ tab.

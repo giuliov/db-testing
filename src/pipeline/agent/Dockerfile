@@ -18,6 +18,10 @@ RUN apt-get update \
         libunwind8 \
         netcat
 
+# Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# .Net Core 3.1 SDK
 RUN apt-get update \
  && apt-get install -y wget apt-transport-https
 RUN wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
