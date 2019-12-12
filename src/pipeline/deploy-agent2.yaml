@@ -1,0 +1,63 @@
+name: ${RESOURCE_GROUP}-agent
+apiVersion: '2018-10-01'
+location: $RESOURCE_LOCATION
+properties:
+  containers:
+  - name: mssql-attach-pubs
+    properties:
+      image: $ACR_SERVER/sql-demo/linux/mssql-attach-pubs:v1
+      ports:
+      - protocol: TCP
+        port: 1433
+      environmentVariables:
+      - name: ACCEPT_EULA
+        value: Y
+      - name: SA_PASSWORD
+        secureValue: $SA_PASSWORD
+      - name: ATTACH_WAIT
+        value: 60s
+      resources:
+        requests:
+          memoryInGB: 3
+          cpu: 2
+      volumeMounts:
+      - name: database-share
+        mountPath: /sqldata
+        readOnly: false
+      - name: backup-share
+        mountPath: /sqlbackup
+        readOnly: false
+  - name: azp-agent
+    properties:
+      image: $ACR_SERVER/sql-demo/linux/azp-agent:v1
+      environmentVariables:
+      - name: SA_PASSWORD
+        secureValue: $SA_PASSWORD
+      - name: AZP_URL
+        value: $AZP_URL
+      - name: AZP_TOKEN
+        secureValue: $AZP_TOKEN
+      - name: AZP_POOL
+        value: Demos
+      resources:
+        requests:
+          memoryInGB: 2
+          cpu: 1
+  imageRegistryCredentials:
+  - server: $ACR_SERVER
+    username: $ACR_USER
+    password: $ACR_PASSWD
+  osType: linux
+  volumes:
+  - name: database-share
+    azureFile:
+      shareName: database
+      readOnly: false
+      storageAccountName: $STORAGEACCOUNT_NAME
+      storageAccountKey: $STORAGEACCOUNT_KEY
+  - name: backup-share
+    azureFile:
+      shareName: backups
+      readOnly: false
+      storageAccountName: $STORAGEACCOUNT_NAME
+      storageAccountKey: $STORAGEACCOUNT_KEY

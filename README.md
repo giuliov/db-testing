@@ -116,6 +116,7 @@ The script is `import-script/setup.sql` and creates a `Products` table in a new 
 Furthermore is shows how to load data from a CSV file using the **bcp** tool.
 
 ```bash
+cd src
 cd import-script
 docker build . -t mssql-launch-script:v1
 
@@ -146,7 +147,7 @@ docker build . -t mssql-pubs:v1
 ```
 
 ```bash
-docker run --name sql3 --rm -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mssql-pubs:v1
+docker run --name sql3 --rm -d -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SA_PASSWORD" -p 1433:1433 mssql-pubs:v1
 docker exec -it sql3 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -Q "SELECT name FROM sys.databases;"
 docker exec -it sql3 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -d pubs -Q "SELECT * FROM employee;"
 ```
@@ -213,6 +214,10 @@ The command will take a couple of minutes to create the VM and pull the image fr
 
 Look in the Portal the actions then the logs.
 
+```
+az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-pubs --container-name ${RESOURCE_GROUP}-pubs
+```
+
 Now connect using Azure Data Studio or similar.
 
 Clean up
@@ -232,6 +237,7 @@ Looks like mounting the share on `/var/opt/mssql` crashes SQL, so we will use a 
 First step, we upload the **pubs** database files (`.mdf` and `.ldf`) to an Azure File share.
 
 ```bash
+ls -l azure-resources/data/
 az storage file upload-batch --account-name $STORAGEACCOUNT_NAME --account-key $STORAGEACCOUNT_KEY --destination database --source azure-resources/data/
 ```
 
@@ -302,14 +308,21 @@ Deploy the containers couple.
 
 ```
 cd ..
-eval "echo \"$(cat deploy-agent.yaml)\"" > _temp-agent.yaml
-az container create --resource-group $RESOURCE_GROUP --file _temp-agent.yaml -o tsv
+eval "echo \"$(cat deploy-agent2.yaml)\"" > _temp-agent2.yaml
+az container create --resource-group $RESOURCE_GROUP --file _temp-agent2.yaml -o tsv
 
 az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-agent --container-name mssql-attach-pubs
 az container logs --resource-group $RESOURCE_GROUP --name ${RESOURCE_GROUP}-agent --container-name azp-agent
 ```
 
 Now kick-off the pipeline in Azure Pipelines and look at the _Tests_ tab.
+
+The run fails if you do not define these variables
+```
+STORAGEACCOUNT_NAME = ********
+STORAGEACCOUNT_KEY  = ************
+SA_PASSWORD         = ************
+```
 
 Clean up
 
